@@ -108,7 +108,7 @@
         const user = document.getElementById('reg-username').value.trim();
         const pass = document.getElementById('reg-password').value;
         const errEl = document.getElementById('reg-error');
-        const okEl  = document.getElementById('reg-success');
+        const okEl = document.getElementById('reg-success');
         clearErrors();
 
         if (!user || !pass) { showErr(errEl, 'Please fill in all fields.'); return; }
@@ -127,7 +127,7 @@
         // Clear register form
         document.getElementById('reg-username').value = '';
         document.getElementById('reg-password').value = '';
-        
+
         // Immediately log them in!
         enterTrader(user);
     });
@@ -226,23 +226,23 @@
         if (!selectedSymbol) return;
         const tipEl = document.getElementById('market-tip');
         if (!tipEl) return;
-        
+
         const { bid, ask } = market[selectedSymbol];
-        
+
         if (selectedSide === 'BUY') {
             if (ask > 0) {
-                tipEl.innerHTML = `💡 To match instantly, set Price to <em>₹ ${(ask/100).toFixed(2)}</em> or higher.`;
+                tipEl.innerHTML = `To match instantly, set Price to <em>₹ ${(ask / 100).toFixed(2)}</em> or higher.`;
                 tipEl.className = 'market-tip ready-buy';
             } else {
-                tipEl.textContent = '💡 Waiting for sellers to enter the market...';
+                tipEl.textContent = 'Waiting for sellers to enter the market...';
                 tipEl.className = 'market-tip';
             }
         } else {
             if (bid > 0) {
-                tipEl.innerHTML = `💡 To match instantly, set Price to <em>₹ ${(bid/100).toFixed(2)}</em> or lower.`;
+                tipEl.innerHTML = `To match instantly, set Price to <em>₹ ${(bid / 100).toFixed(2)}</em> or lower.`;
                 tipEl.className = 'market-tip ready-sell';
             } else {
-                tipEl.textContent = '💡 Waiting for buyers to enter the market...';
+                tipEl.textContent = 'Waiting for buyers to enter the market...';
                 tipEl.className = 'market-tip';
             }
         }
@@ -258,10 +258,10 @@
     function updateDetailPrices(sym) {
         if (sym !== selectedSymbol) return;
         const { bid, ask } = market[sym];
-        document.getElementById('detail-bid').textContent   = bid > 0 ? `₹ ${(bid/100).toFixed(2)}` : '₹ —';
-        document.getElementById('detail-ask').textContent   = ask > 0 ? `₹ ${(ask/100).toFixed(2)}` : '₹ —';
+        document.getElementById('detail-bid').textContent = bid > 0 ? `₹ ${(bid / 100).toFixed(2)}` : '₹ —';
+        document.getElementById('detail-ask').textContent = ask > 0 ? `₹ ${(ask / 100).toFixed(2)}` : '₹ —';
         const spread = ask > 0 && bid > 0 ? ask - bid : 0;
-        document.getElementById('detail-spread').textContent = spread > 0 ? `₹ ${(spread/100).toFixed(2)}` : '₹ —';
+        document.getElementById('detail-spread').textContent = spread > 0 ? `₹ ${(spread / 100).toFixed(2)}` : '₹ —';
     }
 
     // ── Market Depth ────────────────────────────────────────
@@ -275,10 +275,10 @@
         for (let i = 0; i < 5; i++) {
             const bPrice = bid > 0 ? (bid - i * 5) / 100 : 0;
             const aPrice = ask > 0 ? (ask + i * 5) / 100 : 0;
-            const bQty   = bid > 0 ? (500 + Math.floor(Math.random() * 2000)) : 0;
-            const aQty   = ask > 0 ? (500 + Math.floor(Math.random() * 2000)) : 0;
-            const barW   = Math.min(90, (bQty / 30));
-            const aBarW  = Math.min(90, (aQty / 30));
+            const bQty = bid > 0 ? (500 + Math.floor(Math.random() * 2000)) : 0;
+            const aQty = ask > 0 ? (500 + Math.floor(Math.random() * 2000)) : 0;
+            const barW = Math.min(90, (bQty / 30));
+            const aBarW = Math.min(90, (aQty / 30));
 
             if (bid > 0) {
                 bidContainer.innerHTML += `
@@ -305,7 +305,7 @@
     // ORDER FORM (TRADER)
     // ═══════════════════════════════════════════════════════
     // Buy / Sell tab toggle
-    document.getElementById('tab-buy').addEventListener('click',  () => setSide('BUY'));
+    document.getElementById('tab-buy').addEventListener('click', () => setSide('BUY'));
     document.getElementById('tab-sell').addEventListener('click', () => setSide('SELL'));
 
     function setSide(side) {
@@ -321,7 +321,7 @@
 
     function calcTotal() {
         const price = parseFloat(document.getElementById('order-price').value) || 0;
-        const qty   = parseInt(document.getElementById('order-qty').value) || 0;
+        const qty = parseInt(document.getElementById('order-qty').value) || 0;
         document.getElementById('order-total').textContent = `Total: ₹ ${(price * qty).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
     }
 
@@ -330,10 +330,10 @@
 
     // Place Order
     document.getElementById('btn-place-order').addEventListener('click', () => {
-        const sym   = document.getElementById('order-symbol').value;
-        const side  = document.getElementById('order-side').value;
+        const sym = document.getElementById('order-symbol').value;
+        const side = document.getElementById('order-side').value;
         const price = parseFloat(document.getElementById('order-price').value);
-        const qty   = parseInt(document.getElementById('order-qty').value);
+        const qty = parseInt(document.getElementById('order-qty').value);
 
         if (!sym || !price || !qty || price <= 0 || qty <= 0) {
             return;
@@ -344,11 +344,11 @@
         }
 
         ws.send(JSON.stringify({
-            type:   'manual_order',
+            type: 'manual_order',
             action: side.toLowerCase(),
             symbol: sym,
-            price:  price,
-            qty:    qty
+            price: price,
+            qty: qty
         }));
 
         // Add to order list as PENDING
@@ -373,7 +373,7 @@
                 <span class="order-type ${side}">${side}</span>
             </div>
             <div class="order-entry-bot">
-                <span id="price-qty-${key}">₹ ${price.toFixed ? price.toFixed(2) : (price/100).toFixed(2)} × ${qty}</span>
+                <span id="price-qty-${key}">₹ ${price.toFixed ? price.toFixed(2) : (price / 100).toFixed(2)} × ${qty}</span>
                 <span class="order-latency-val" id="lat-${key}">${latencyMs != null ? latencyMs + ' ms' : ''}</span>
             </div>
             <div class="order-status ${status === 'FILLED' ? 'filled' : 'pending'}" id="status-${key}">${status}</div>`;
@@ -472,8 +472,8 @@
         if (!latencyChart || !fillRateChart || !data || !data.length) return;
 
         // Build labels & data
-        const labels   = [];
-        const latData  = [];
+        const labels = [];
+        const latData = [];
         const fillData = [];
 
         // Sort: manual first, then bots
@@ -486,16 +486,16 @@
             fillData.push(parseFloat(d.fill_rate.toFixed(2)));
         });
 
-        latencyChart.data.labels  = labels;
+        latencyChart.data.labels = labels;
         latencyChart.data.datasets[0].data = latData;
         latencyChart.data.datasets[0].backgroundColor = labels.map(l => l === 'YOU' ? '#00a852' : '#222');
-        latencyChart.data.datasets[0].borderColor      = labels.map(l => l === 'YOU' ? '#00a852' : '#333');
+        latencyChart.data.datasets[0].borderColor = labels.map(l => l === 'YOU' ? '#00a852' : '#333');
         latencyChart.update('none');
 
-        fillRateChart.data.labels  = labels;
+        fillRateChart.data.labels = labels;
         fillRateChart.data.datasets[0].data = fillData;
         fillRateChart.data.datasets[0].backgroundColor = labels.map(l => l === 'YOU' ? '#005c2d' : '#1e1e1e');
-        fillRateChart.data.datasets[0].borderColor      = labels.map(l => l === 'YOU' ? '#00a852' : '#333');
+        fillRateChart.data.datasets[0].borderColor = labels.map(l => l === 'YOU' ? '#00a852' : '#333');
         fillRateChart.update('none');
     }
 
@@ -524,12 +524,12 @@
     // WEBSOCKET
     // ═══════════════════════════════════════════════════════
     function connectWS(role) {
-        if (ws) { try { ws.close(); } catch(e) {} }
+        if (ws) { try { ws.close(); } catch (e) { } }
 
         ws = new WebSocket(WS_URL);
 
         const indicator = document.getElementById(`ws-status-${role}`);
-        
+
         ws.onopen = () => {
             if (indicator) indicator.classList.add('connected');
         };
@@ -539,7 +539,7 @@
 
         ws.onmessage = (evt) => {
             let data;
-            try { data = JSON.parse(evt.data); } catch(e) { return; }
+            try { data = JSON.parse(evt.data); } catch (e) { return; }
 
             if (data.type === 'market_data') {
                 handleMarketData(data, role);
@@ -570,8 +570,8 @@
             // Update sidebar
             const askEl = document.getElementById(`price-ask-${sym}`);
             const bidEl = document.getElementById(`price-bid-${sym}`);
-            if (askEl) askEl.textContent = data.ask > 0 ? `₹ ${(data.ask/100).toFixed(2)}` : '₹ —';
-            if (bidEl) bidEl.textContent = data.bid > 0 ? `Bid: ₹ ${(data.bid/100).toFixed(2)}` : 'Bid: ₹ —';
+            if (askEl) askEl.textContent = data.ask > 0 ? `₹ ${(data.ask / 100).toFixed(2)}` : '₹ —';
+            if (bidEl) bidEl.textContent = data.bid > 0 ? `Bid: ₹ ${(data.bid / 100).toFixed(2)}` : 'Bid: ₹ —';
 
             // Update detail pane if this symbol is selected
             if (selectedSymbol === sym) {
@@ -637,7 +637,7 @@
         if (role === 'trader') {
             const key = data.order_id;
             const statusEl = document.getElementById(`status-${key}`);
-            const latEl    = document.getElementById(`lat-${key}`);
+            const latEl = document.getElementById(`lat-${key}`);
             const priceQtyEl = document.getElementById(`price-qty-${key}`);
 
             if (statusEl) {
