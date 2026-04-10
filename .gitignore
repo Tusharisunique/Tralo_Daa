@@ -1,0 +1,38 @@
+# === Build Artifacts ===
+Backend/build/
+build/
+bin/
+*.o
+*.a
+*.so
+*.dylib
+tralo_exchange
+
+# === Python ===
+.venv/
+env/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# === IDE & Project Tools ===
+.vscode/
+.idea/
+.cache/
+.gemini/
+compile_commands.json
+.cmake/
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Makefile
+cmake_install.cmake
+
+# === System Files ===
+.DS_Store
+Thumbs.db
+
+# === Logs ===
+*.log
+Backend/logs/

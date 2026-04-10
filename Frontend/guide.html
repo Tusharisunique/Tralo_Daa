@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRALO — System Guide</title>
+    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { overflow-y: auto; }
+        .guide-container {
+            max-width: 900px;
+            margin: 60px auto;
+            padding: 0 40px;
+        }
+        .guide-header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 40px;
+            margin-bottom: 60px;
+        }
+        .guide-title {
+            font-size: 42px;
+            font-weight: 700;
+            letter-spacing: -2px;
+            color: var(--bright);
+            margin-bottom: 12px;
+        }
+        .guide-subtitle {
+            font-size: 16px;
+            color: var(--muted);
+            letter-spacing: 0.5px;
+        }
+        .section {
+            margin-bottom: 80px;
+        }
+        .section-title {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--green);
+            margin-bottom: 24px;
+        }
+        .guide-h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--bright);
+            margin-bottom: 20px;
+            letter-spacing: -0.5px;
+        }
+        .guide-p {
+            font-size: 15px;
+            color: var(--soft);
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+        .glossary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 32px;
+        }
+        .glossary-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 24px;
+        }
+        .glossary-term {
+            font-family: var(--mono);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--bright);
+            margin-bottom: 8px;
+        }
+        .glossary-def {
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--soft);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 40px;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: var(--bright); }
+        .highlight { color: var(--bright); font-weight: 500; }
+        
+        .bot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+        .bot-card {
+            background: var(--surface2);
+            padding: 20px;
+            border-bottom: 2px solid var(--border);
+        }
+        .bot-name {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+        .bot-desc {
+            font-size: 11px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .alert-box {
+            background: rgba(0, 168, 82, 0.05);
+            border-left: 3px solid var(--green);
+            padding: 24px;
+            margin: 40px 0;
+        }
+        .alert-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--green);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="guide-container">
+        <a href="index.html" class="back-link">← Back to Terminal</a>
+
+        <header class="guide-header">
+            <h1 class="guide-title">System Guide</h1>
+            <p class="guide-subtitle">A deep dive into the TRALO high-performance exchange architecture.</p>
+        </header>
+
+        <!-- Section: How it Works -->
+        <section class="section">
+            <div class="section-title">Core Mechanics</div>
+            <h2 class="guide-h2">The Matching Engine</h2>
+            <p class="guide-p">
+                At the heart of TRALO is a custom-built C++ matching engine designed for <span class="highlight">O(1) complexity</span>. 
+                Instead of searching through lists of orders, it uses flat price-arrays where every price point is a direct index. 
+                This allows the system to process roughly <span class="highlight">50,000 orders per second</span> with sub-microsecond internal latency.
+            </p>
+            <p class="guide-p">
+                The engine follows the industry standard <span class="highlight">Price-Time Priority</span> rule:
+            </p>
+            <ul class="guide-p" style="padding-left: 20px;">
+                <li><strong>Price Priority:</strong> A Buy order at a higher price always matches before a lower-priced one. A Sell order at a lower price matches before a higher-priced one.</li>
+                <li><strong>Time Priority:</strong> If multiple orders exist at the same price, the one that arrived first is filled first.</li>
+            </ul>
+        </section>
+
+        <!-- Section: Glossary -->
+        <section class="section">
+            <div class="section-title">Glossary</div>
+            <h2 class="guide-h2">Trading Terminology</h2>
+            <div class="glossary-grid">
+                <div class="glossary-card">
+                    <div class="glossary-term">Best Bid</div>
+                    <div class="glossary-def">The highest price a buyer is currently willing to pay for a stock. It represents the "front" of the Buy queue.</div>
+                </div>
+                <div class="glossary-card">
+                    <div class="glossary-term">Best Ask</div>
+                    <div class="glossary-def">The lowest price a seller is currently willing to accept. Also known as the "Offer."</div>
+                </div>
+                <div class="glossary-card">
+                    <div class="glossary-term">Spread</div>
+                    <div class="glossary-def">The gap between the Best Ask and the Best Bid. A tighter spread usually indicates a more liquid and healthy market.</div>
+                </div>
+                <div class="glossary-card">
+                    <div class="glossary-term">Market Depth</div>
+                    <div class="glossary-def">The list of all pending orders at different price levels. It shows how much "supply" and "demand" exists beyond the ticker price.</div>
+                </div>
+                <div class="glossary-card">
+                    <div class="glossary-term">Limit Order</div>
+                    <div class="glossary-def">An order to trade at a specific price or better. It doesn't fill immediately unless a matching price exists in the book.</div>
+                </div>
+                <div class="glossary-card">
+                    <div class="glossary-term">Fill Rate</div>
+                    <div class="glossary-def">The percentage of your total orders that resulted in a successful trade (match). </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Market Participants -->
+        <section class="section">
+            <div class="section-title">The Ecosystem</div>
+            <h2 class="guide-h2">Simulated Traders (Bots)</h2>
+            <p class="guide-p">
+                To create a realistic trading environment, the system spawns 40 concurrent bot threads that simulate different market behaviors:
+            </p>
+            <div class="bot-grid">
+                <div class="bot-card">
+                    <div class="bot-name">Retail Traders</div>
+                    <div class="bot-desc">Simulate individual humans. They place small, infrequent orders with random delays.</div>
+                </div>
+                <div class="bot-card">
+                    <div class="bot-name">HFT Algos</div>
+                    <div class="bot-desc">High-Frequency Trading bots. They spray thousands of orders to capture tiny price movements.</div>
+                </div>
+                <div class="bot-card">
+                    <div class="bot-name">Market Makers</div>
+                    <div class="bot-desc">Critical for liquidity. They constantly quote both Buy and Sell prices to keep the spread tight.</div>
+                </div>
+                <div class="bot-card">
+                    <div class="bot-name">Snipers</div>
+                    <div class="bot-desc">Stealthy bots that wait for specific bursts of volume to execute large "hidden" trades.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: FAQ -->
+        <section class="section">
+            <div class="section-title">Technical FAQ</div>
+            <h2 class="guide-h2">Common Questions</h2>
+            
+            <div class="alert-box">
+                <div class="alert-title">Why does the Admin stream start at zero?</div>
+                <p class="guide-p" style="margin-bottom: 0;">
+                    The C++ Engine starts as soon as the backend launches. However, the Frontend only connects to a <span class="highlight">Live Stream</span>. 
+                    The exchange does not store historical bot trades in a database to preserve performance. When you open the Admin page, 
+                    you are "tuning in" to the live broadcast—you only see events occurring from that moment onwards.
+                </p>
+            </div>
+
+            <div class="alert-box">
+                <div class="alert-title">Price Improvement (Better Fills)</div>
+                <p class="guide-p" style="margin-bottom: 0;">
+                    If you place a BUY order at ₹3000 while the Best Ask is ₹2500, the exchange will match you at <span class="highlight">₹2500</span>. 
+                    A Limit Order says: "I want to buy at THIS price OR BETTER." Since ₹2500 is better for you than ₹3000, the system gives you the lower price. 
+                    This is a standard feature of real-world exchanges.
+                </p>
+            </div>
+
+            <div class="alert-box" style="border-left-color: var(--red); background: rgba(255, 68, 68, 0.05);">
+                <div class="alert-title" style="color: var(--red);">Circuit Breakers (Price Bands)</div>
+                <p class="guide-p" style="margin-bottom: 0;">
+                    To prevent "fat-finger" errors (accidentally typing too many zeros), the exchange enforces a <span class="highlight">±20% Price Band</span>. 
+                    If you try to buy a stock trading at ₹2500 for ₹5000, the order will be rejected. This protects traders from extreme losses due to typos.
+                </p>
+            </div>
+        </section>
+
+        <footer style="padding: 100px 0 60px; text-align: center; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; letter-spacing: 1px;">
+            TRALO EXCHANGE SIMULATION · VERSION 3.0
+        </footer>
+    </div>
+</body>
+
+</html>

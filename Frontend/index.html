@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRALO — Exchange Terminal</title>
+    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+
+    <!-- ===== AUTH SCREEN ===== -->
+    <div id="screen-auth" class="screen active">
+        <div class="auth-wrapper">
+            <div class="brand">
+                <div class="brand-logo">TRALO</div>
+                <div class="brand-sub">High-Performance Exchange Simulation</div>
+            </div>
+            <div class="auth-card">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" data-tab="login">Login</button>
+                    <button class="auth-tab" data-tab="register">Register</button>
+                </div>
+
+                <!-- Login Panel -->
+                <div id="panel-login" class="auth-panel active">
+                    <div class="form-field">
+                        <label>Username</label>
+                        <input type="text" id="login-username" placeholder="Enter username" autocomplete="off">
+                    </div>
+                    <div class="form-field">
+                        <label>Password</label>
+                        <input type="password" id="login-password" placeholder="Enter password">
+                    </div>
+                    <div id="login-error" class="form-error" style="display:none"></div>
+                    <button class="btn-primary" id="btn-login">Connect to Exchange</button>
+                </div>
+
+                <!-- Register Panel -->
+                <div id="panel-register" class="auth-panel">
+                    <div class="form-field">
+                        <label>Full Name / Username</label>
+                        <input type="text" id="reg-username" placeholder="Choose a username" autocomplete="off">
+                    </div>
+                    <div class="form-field">
+                        <label>Password</label>
+                        <input type="password" id="reg-password" placeholder="Choose a password">
+                    </div>
+                    <div class="form-field">
+                        <label>Role</label>
+                        <select id="reg-role">
+                            <option value="trader">Trader</option>
+                        </select>
+                    </div>
+                    <div id="reg-error" class="form-error" style="display:none"></div>
+                    <div id="reg-success" class="form-success" style="display:none"></div>
+                    <button class="btn-primary" id="btn-register">Create Account</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TRADER SCREEN ===== -->
+    <div id="screen-trader" class="screen">
+        <nav class="topbar">
+            <div class="topbar-left">
+                <span class="nav-logo">TRALO</span>
+                <span class="nav-tag">TRADER</span>
+            </div>
+            <div class="topbar-right">
+                <span class="nav-user" id="trader-username-display">—</span>
+                <div class="ws-indicator" id="ws-status-trader" title="Connecting...">
+                    <span class="ws-dot"></span>
+                    <span class="ws-label">LIVE</span>
+                </div>
+                <button class="logout-btn" style="margin-right: 8px;" onclick="window.open('guide.html', '_blank')">Guide</button>
+                <button class="logout-btn" id="trader-logout">Logout</button>
+            </div>
+        </nav>
+
+        <div class="trader-layout">
+            <!-- Left: Market Watch -->
+            <aside class="market-watch">
+                <div class="panel-title">Market Watch</div>
+                <div class="stock-list" id="stock-list">
+                    <!-- Injected by JS -->
+                </div>
+            </aside>
+
+            <!-- Center: Main Area -->
+            <main class="trader-main">
+                <!-- Stock Detail Pane (shown on click) -->
+                <div id="stock-detail-pane" class="detail-pane hidden">
+                    <div class="detail-header">
+                        <div>
+                            <div class="detail-symbol" id="detail-symbol">—</div>
+                            <div class="detail-exchange">NSE · India</div>
+                        </div>
+                        <div class="detail-prices">
+                            <div class="price-box">
+                                <span class="price-label">Best Bid</span>
+                                <span class="price-value buy" id="detail-bid">₹ —</span>
+                            </div>
+                            <div class="price-sep">|</div>
+                            <div class="price-box">
+                                <span class="price-label">Best Ask</span>
+                                <span class="price-value sell" id="detail-ask">₹ —</span>
+                            </div>
+                            <div class="price-sep">|</div>
+                            <div class="price-box">
+                                <span class="price-label">Spread</span>
+                                <span class="price-value" id="detail-spread">₹ —</span>
+                            </div>
+                        </div>
+                        <button class="btn-close-detail" id="btn-close-detail">✕</button>
+                    </div>
+
+                    <!-- Market Depth -->
+                    <div class="depth-section">
+                        <div class="depth-half">
+                            <div class="depth-header">
+                                <span class="depth-col price">Bid Price</span>
+                                <span class="depth-col qty">Qty</span>
+                                <span class="depth-col bar-header"></span>
+                            </div>
+                            <div id="depth-bids" class="depth-rows"></div>
+                        </div>
+                        <div class="depth-divider"></div>
+                        <div class="depth-half">
+                            <div class="depth-header">
+                                <span class="depth-col bar-header"></span>
+                                <span class="depth-col price">Ask Price</span>
+                                <span class="depth-col qty">Qty</span>
+                            </div>
+                            <div id="depth-asks" class="depth-rows"></div>
+                        </div>
+                    </div>
+
+                    <!-- Order Form -->
+                    <div class="order-section">
+                        <div class="order-tabs">
+                            <button class="order-tab active buy-tab" id="tab-buy" data-side="BUY">BUY</button>
+                            <button class="order-tab sell-tab" id="tab-sell" data-side="SELL">SELL</button>
+                        </div>
+                        <div class="order-form" id="order-form">
+                            <input type="hidden" id="order-symbol">
+                            <input type="hidden" id="order-side" value="BUY">
+                            <div class="order-fields">
+                                <div class="field-group">
+                                    <label>Quantity</label>
+                                    <input type="number" id="order-qty" value="10" min="1">
+                                </div>
+                                <div class="field-group">
+                                    <label>Price (₹)</label>
+                                    <input type="number" id="order-price" step="0.05">
+                                </div>
+                            </div>
+                            <div id="market-tip" class="market-tip"></div>
+                            <div class="order-total" id="order-total">Total: ₹ 0.00</div>
+                            <button class="btn-order buy" id="btn-place-order">Place BUY Order</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty state (no stock selected) -->
+                <div id="empty-state" class="empty-state">
+                    <div class="empty-icon">📈</div>
+                    <div class="empty-text">Select a stock from the Market Watch to trade</div>
+                </div>
+            </main>
+
+            <!-- Right: Your Orders -->
+            <aside class="orders-panel">
+                <div class="panel-title">Your Orders</div>
+                <div class="system-latency" id="trader-sys-latency">Sys Latency: —</div>
+                <div id="trader-orders-list" class="orders-list">
+                    <div class="no-orders-msg">No orders yet. Place your first trade.</div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- ===== ADMIN SCREEN ===== -->
+    <div id="screen-admin" class="screen">
+        <nav class="topbar">
+            <div class="topbar-left">
+                <span class="nav-logo">TRALO</span>
+                <span class="nav-tag admin">ADMIN</span>
+            </div>
+            <div class="topbar-center">
+                <button class="admin-nav active" data-panel="panel-stream">Live Stream</button>
+                <button class="admin-nav" data-panel="panel-fairness">Fairness Analysis</button>
+            </div>
+            <div class="topbar-right">
+                <div class="ws-indicator" id="ws-status-admin">
+                    <span class="ws-dot"></span>
+                    <span class="ws-label">LIVE</span>
+                </div>
+                <button class="logout-btn" style="margin-right: 8px;" onclick="window.open('guide.html', '_blank')">Guide</button>
+                <button class="logout-btn" id="admin-logout">Logout</button>
+            </div>
+        </nav>
+
+        <!-- Live Stream Panel -->
+        <div id="panel-stream" class="admin-panel active">
+            <div class="admin-metrics">
+                <div class="admin-metric-card">
+                    <label>Engine Throughput</label>
+                    <div class="metric-value">~50,000 <span>/ sec</span></div>
+                </div>
+                <div class="admin-metric-card">
+                    <label>Total Orders Seen</label>
+                    <div class="metric-value" id="admin-total-count">0</div>
+                </div>
+                <div class="admin-metric-card">
+                    <label>Avg Match Latency</label>
+                    <div class="metric-value" id="admin-avg-lat">—<span> ms</span></div>
+                </div>
+                <div class="admin-metric-card">
+                    <label>Symbols Active</label>
+                    <div class="metric-value">5</div>
+                </div>
+            </div>
+
+            <div class="stream-table-wrap">
+                <div class="panel-title" style="padding: 16px 24px; border-bottom: 1px solid #1e1e1e;">
+                    Real-time Order Stream <span
+                        style="color: #555; font-weight: 400; font-size: 12px; margin-left: 8px;">(Bot orders throttled
+                        for display)</span>
+                </div>
+                <table class="stream-table" id="admin-stream-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Symbol</th>
+                            <th>Source</th>
+                            <th>Side</th>
+                            <th>Price</th>
+                            <th>Qty</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-stream-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Fairness Analysis Panel -->
+        <div id="panel-fairness" class="admin-panel">
+            <div class="fairness-grid">
+                <div class="chart-card">
+                    <div class="chart-title">Average Match Latency — Trader vs Bots</div>
+                    <div class="chart-desc">Lower and equal bars = fairer system. The engine makes no distinction
+                        between manual and bot orders.</div>
+                    <div class="chart-wrap"><canvas id="chart-latency"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Fill Rate (%) — Order Completion Equality</div>
+                    <div class="chart-desc">Shows what % of submitted orders get matched. A fair engine shows similar
+                        fill rates regardless of trader type.</div>
+                    <div class="chart-wrap"><canvas id="chart-fillrate"></canvas></div>
+                </div>
+            </div>
+            <div class="fairness-note">
+                <strong>How fairness works:</strong> The TRALO engine uses a strict <em>Price-Time Priority</em> queue.
+                Bots (40 concurrent) and manual orders share <strong>the same queue</strong> with no special treatment.
+                Latencies directly reflect CPU scheduling, not exchange bias.
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=3"></script>
+</body>
+
+</html>
