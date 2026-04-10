@@ -1,4 +1,4 @@
-# TRALO — High-Performance Exchange Simulation
+# TRALO - High-Performance Exchange Simulation
 
 TRALO is a professional-grade stock exchange simulator designed with a C++ matching engine and a modern web interface. It simulates low-latency market mechanics including price-time priority, price improvement, and circuit breakers.
 
