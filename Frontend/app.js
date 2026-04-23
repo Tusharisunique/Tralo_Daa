@@ -280,23 +280,16 @@
             const aPrice = ask > 0 ? (ask + i * 5) / 100 : 0;
             const bQty = bid > 0 ? (500 + Math.floor(Math.random() * 2000)) : 0;
             const aQty = ask > 0 ? (500 + Math.floor(Math.random() * 2000)) : 0;
-            const barW = Math.min(90, (bQty / 30));
-            const aBarW = Math.min(90, (aQty / 30));
-
             if (bid > 0) {
                 bidContainer.innerHTML += `
                 <div class="depth-row buy-side">
-                    <div class="depth-bar" style="width:${barW}%"></div>
                     <span class="depth-price buy-price">₹${bPrice.toFixed(2)}</span>
                     <span class="depth-qty">${bQty.toLocaleString()}</span>
-                    <span class="depth-bar-cell"></span>
                 </div>`;
             }
             if (ask > 0) {
                 askContainer.innerHTML += `
                 <div class="depth-row sell-side">
-                    <div class="depth-bar" style="width:${aBarW}%"></div>
-                    <span class="depth-bar-cell"></span>
                     <span class="depth-price sell-price">₹${aPrice.toFixed(2)}</span>
                     <span class="depth-qty">${aQty.toLocaleString()}</span>
                 </div>`;

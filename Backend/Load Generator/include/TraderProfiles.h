@@ -1,23 +1,22 @@
 #pragma once
 
 #include "Trader.h"
-#include <iostream>
 #include <cstring>
+#include <iostream>
 #include <map>
 
 struct StockConfig {
-    uint64_t base_price_paise;
-    uint32_t spread_paise;
+  uint64_t base_price_paise;
+  uint32_t spread_paise;
 };
 
 // Internal engine prices are in Paise (1/100th of a Rupee)
 static std::map<std::string, StockConfig> STOCK_CONFIGS = {
     {"RELIANCE", {250000, 1000}},
-    {"TCS",      {350000, 1500}},
-    {"HDFC",     {160000, 800}},
-    {"INFOSYS",  {150000, 800}},
-    {"ICICIBANK",{95000,  500}}
-};
+    {"TCS", {350000, 1500}},
+    {"HDFC", {160000, 800}},
+    {"INFOSYS", {150000, 800}},
+    {"ICICIBANK", {95000, 500}}};
 
 class RetailTrader : public Trader {
 public:
@@ -34,10 +33,11 @@ protected:
     while (running.load(std::memory_order_relaxed)) {
       std::this_thread::sleep_for(std::chrono::microseconds(sleep_dist(rng)));
 
-      const std::string& sym = symbols[sym_dist(rng)];
-      const auto& config = STOCK_CONFIGS[sym];
-      
-      std::uniform_int_distribution<uint64_t> price_dist(config.base_price_paise - 500, config.base_price_paise + 500);
+      const std::string &sym = symbols[sym_dist(rng)];
+      const auto &config = STOCK_CONFIGS[sym];
+
+      std::uniform_int_distribution<uint64_t> price_dist(
+          config.base_price_paise - 500, config.base_price_paise + 500);
 
       Order o{};
       o.price = price_dist(rng);
@@ -65,7 +65,7 @@ public:
 protected:
   void run() override {
     // HFT: 200-500us (Aggressive but context-switch friendly)
-    std::uniform_int_distribution<int> sleep_dist(200, 500); 
+    std::uniform_int_distribution<int> sleep_dist(200, 500);
     std::uniform_int_distribution<uint32_t> qty_dist(50, 100);
     std::uniform_int_distribution<int> side_dist(0, 1);
     std::uniform_int_distribution<int> sym_dist(0, symbols.size() - 1);
@@ -73,9 +73,10 @@ protected:
     while (running.load(std::memory_order_relaxed)) {
       std::this_thread::sleep_for(std::chrono::microseconds(sleep_dist(rng)));
 
-      const std::string& sym = symbols[sym_dist(rng)];
-      const auto& config = STOCK_CONFIGS[sym];
-      std::normal_distribution<double> price_dist(config.base_price_paise, 100.0);
+      const std::string &sym = symbols[sym_dist(rng)];
+      const auto &config = STOCK_CONFIGS[sym];
+      std::normal_distribution<double> price_dist(config.base_price_paise,
+                                                  100.0);
 
       Order o{};
       o.price = static_cast<uint64_t>(price_dist(rng));
@@ -109,8 +110,8 @@ protected:
     while (running.load(std::memory_order_relaxed)) {
       std::this_thread::sleep_for(std::chrono::microseconds(sleep_dist(rng)));
 
-      const std::string& sym = symbols[sym_dist(rng)];
-      const auto& config = STOCK_CONFIGS[sym];
+      const std::string &sym = symbols[sym_dist(rng)];
+      const auto &config = STOCK_CONFIGS[sym];
 
       Order buy_o{}, sell_o{};
       buy_o.price = config.base_price_paise - 50; // Tight spread (50 paise)
@@ -155,12 +156,14 @@ protected:
     while (running.load(std::memory_order_relaxed)) {
       std::this_thread::sleep_for(std::chrono::milliseconds(sleep_dist(rng)));
 
-      const std::string& sym = symbols[sym_dist(rng)];
-      const auto& config = STOCK_CONFIGS[sym];
-      std::uniform_int_distribution<uint64_t> price_dist(config.base_price_paise - 1000, config.base_price_paise + 1000);
-      
+      const std::string &sym = symbols[sym_dist(rng)];
+      const auto &config = STOCK_CONFIGS[sym];
+      std::uniform_int_distribution<uint64_t> price_dist(
+          config.base_price_paise - 1000, config.base_price_paise + 1000);
+
       int burst_size = burst_dist(rng);
-      for (int i = 0; i < burst_size && running.load(std::memory_order_relaxed); ++i) {
+      for (int i = 0; i < burst_size && running.load(std::memory_order_relaxed);
+           ++i) {
         Order o{};
         o.price = price_dist(rng);
         o.quantity = 10;
