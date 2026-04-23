@@ -1,4 +1,5 @@
 # === Build Artifacts ===
+clean.sh
 Backend/build/
 build/
 bin/
