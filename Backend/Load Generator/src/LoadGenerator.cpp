@@ -4,7 +4,8 @@
 
 using namespace std;
 
-LoadGenerator::LoadGenerator(OrderQueue &q, const vector<string>& syms) : queue(q), symbols(syms) {}
+LoadGenerator::LoadGenerator(OrderQueue &q, const vector<string> &syms)
+    : queue(q), symbols(syms) {}
 
 LoadGenerator::~LoadGenerator() { stop_all(); }
 
@@ -14,23 +15,24 @@ void LoadGenerator::setup_scenario(int num_retail, int num_hft, int num_mm,
   uint32_t current_id = 1;
 
   for (int i = 0; i < num_retail; ++i) {
-    traders.push_back(make_unique<RetailTrader>(current_id++, queue,
-                                               global_generated, global_dropped, symbols));
+    traders.push_back(make_unique<RetailTrader>(
+        current_id++, queue, global_generated, global_dropped, symbols));
   }
   for (int i = 0; i < num_hft; ++i) {
-    traders.push_back(
-        make_unique<HFTTrader>(current_id++, queue, global_generated, global_dropped, symbols));
+    traders.push_back(make_unique<HFTTrader>(
+        current_id++, queue, global_generated, global_dropped, symbols));
   }
   for (int i = 0; i < num_mm; ++i) {
-    traders.push_back(make_unique<MarketMaker>(current_id++, queue,
-                                              global_generated, global_dropped, symbols));
+    traders.push_back(make_unique<MarketMaker>(
+        current_id++, queue, global_generated, global_dropped, symbols));
   }
   for (int i = 0; i < num_sniper; ++i) {
-    traders.push_back(make_unique<SniperTrader>(current_id++, queue,
-                                               global_generated, global_dropped, symbols));
+    traders.push_back(make_unique<SniperTrader>(
+        current_id++, queue, global_generated, global_dropped, symbols));
   }
 
-  cout << "[C++] Scenario configured with " << total_traders << " total traders.\n";
+  cout << "[C++] Scenario configured with " << total_traders
+       << " total traders.\n";
   cout.flush();
 }
 
@@ -70,10 +72,10 @@ void LoadGenerator::monitor_loop() {
     double gen_rate = (curr_gen - last_gen) * 1000.0 / elapsed;
     double drop_rate = (curr_drop - last_drop) * 1000.0 / elapsed;
 
-    // Use a specific message type so Python can ignore it if it wants, 
+    // Use a specific message type so Python can ignore it if it wants,
     // or log it for diagnostics.
-    cout << "{\"type\":\"load_stats\",\"gen_rate\":" << fixed << setprecision(1) << gen_rate 
-         << ",\"drop_rate\":" << drop_rate << "}\n";
+    cout << "{\"type\":\"load_stats\",\"gen_rate\":" << fixed << setprecision(1)
+         << gen_rate << ",\"drop_rate\":" << drop_rate << "}\n";
     cout.flush();
 
     last_gen = curr_gen;

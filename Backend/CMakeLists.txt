@@ -17,7 +17,6 @@ set(SOURCES
     "src/exchange_main.cpp"
     "Load Generator/src/LoadGenerator.cpp"
     "Order Matching Engine/src/OrderBook.cpp"
-    "Fairness Analyzer/src/FairnessAnalyzer.cpp"
 )
 
 add_executable(tralo_exchange ${SOURCES})
