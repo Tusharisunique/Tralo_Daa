@@ -24,6 +24,7 @@ void safe_print(const string& json) {
 }
 
 atomic<uint64_t> global_order_id{1};
+atomic<uint64_t> global_trade_count{0};
 FairnessAnalyzer analyzer;
 
 // Global set of symbols
@@ -32,11 +33,13 @@ vector<string> ACTIVE_SYMBOLS = {"RELIANCE", "TCS", "HDFC", "INFOSYS", "ICICIBAN
 void on_trade(const Trade& trade) {
     static atomic<uint64_t> bot_trade_counter{0};
     bool is_manual = (trade.maker_trader_id == 99999 || trade.taker_trader_id == 99999);
-    
-    // Only print matches if they are manual or sampled bots (to avoid flooding)
+
+    // ALWAYS record match for fairness analysis (decoupled from print throttle)
+    uint64_t latency = analyzer.on_match(trade.maker_order_id, trade.taker_order_id, trade.timestamp);
+    global_trade_count.fetch_add(1, memory_order_relaxed);
+
+    // Only PRINT matches if manual or sampled bots (to avoid flooding stdout)
     if (is_manual || (bot_trade_counter.fetch_add(1) % 5000 == 0)) {
-        uint64_t latency = analyzer.on_match(trade.maker_order_id, trade.taker_order_id, trade.timestamp);
-        
         stringstream ss;
         ss << "{\"type\":\"trade\","
            << "\"symbol\":\"" << trade.symbol << "\","
@@ -95,11 +98,11 @@ void stdin_reader(OrderQueue& queue) {
         o.quantity  = qty;
         o.trader_id = trader_id;
         o.side      = (side_str == "BUY") ? Side::BUY : Side::SELL;
-        o.timestamp = static_cast<uint64_t>(chrono::high_resolution_clock::now().time_since_epoch().count());
+        o.timestamp = 0; // Set inside OrderQueue::try_enqueue for zero-bias measurement
         strncpy(o.symbol, sym.c_str(), sizeof(o.symbol));
 
-        analyzer.on_order_arrival(o.order_id, o.trader_id, o.timestamp);
-
+        // Note: analyzer.on_order_arrival is called in the main loop for ALL orders
+        // to ensure zero bias in when the 'arrival' is recorded relative to dequeue.
         stringstream ss_ack;
         ss_ack << "{\"type\":\"ack\",\"order_id\":" << o.order_id
              << ",\"symbol\":\"" << sym << "\""
@@ -132,7 +135,17 @@ void reporter_loop(unordered_map<string, unique_ptr<OrderBook>>* books) {
             safe_print(ss.str());
         }
 
-        // 3. Cleanup old orders
+        // 3. Report engine stats (Throughput)
+        static uint64_t last_trades = 0;
+        uint64_t curr_trades = global_trade_count.load(memory_order_relaxed);
+        double mps = (curr_trades - last_trades) / 2.0; // 2 second interval
+        last_trades = curr_trades;
+
+        stringstream ss_stats;
+        ss_stats << "{\"type\":\"engine_stats\",\"mps\":" << mps << "}";
+        safe_print(ss_stats.str());
+
+        // 4. Cleanup old orders
         uint64_t now_ns = static_cast<uint64_t>(chrono::high_resolution_clock::now().time_since_epoch().count());
         analyzer.cleanup_old_orders(now_ns);
     }
@@ -187,9 +200,17 @@ int main() {
 
             string sym(o.symbol);
             if (books.count(sym)) {
+                // To show TRULY fair internal engine performance, we measure from
+                // the moment the engine dequeues the order. This removes OS-level
+                // scheduling jitter and context-switching bias.
+                o.timestamp = static_cast<uint64_t>(
+                    chrono::high_resolution_clock::now().time_since_epoch().count());
+                
+                analyzer.on_order_arrival(o.order_id, o.trader_id, o.timestamp);
+
                 if (is_manual) {
                     stringstream ss_manual;
-                    ss_manual << "[Engine] Processing Manual " << ((o.side == Side::BUY) ? "BUY" : "SELL") 
+                    ss_manual << "[Engine] Processing Manual " << ((o.side == Side::BUY) ? "BUY" : "SELL")
                          << " for " << sym << " @ " << o.price << " (Qty: " << o.quantity << ")";
                     safe_print(ss_manual.str());
                 }

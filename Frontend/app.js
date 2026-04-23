@@ -24,6 +24,7 @@
     // ── Charts ──────────────────────────────────────────────
     let latencyChart = null;
     let fillRateChart = null;
+    let lastFairnessData = null; // Cache last received data for instant tab display
 
     // ── Admin counters ──────────────────────────────────────
     let adminTotalCount = 0;
@@ -152,9 +153,10 @@
         connectWS('trader');
     }
 
+    let chartsInitialized = false;
+
     function enterAdmin() {
         showScreen('screen-admin');
-        initCharts();
         connectWS('admin');
     }
 
@@ -214,9 +216,10 @@
         updateDetailPrices(sym);
         renderDepth(sym);
 
-        // Pre-fill price
-        if (ask > 0) {
-            document.getElementById('order-price').value = (ask / 100).toFixed(2);
+        // Pre-fill price from current market data
+        const currentAsk = market[sym] ? market[sym].ask : 0;
+        if (currentAsk > 0) {
+            document.getElementById('order-price').value = (currentAsk / 100).toFixed(2);
         }
         calcTotal();
         updateMarketTip();
@@ -392,6 +395,20 @@
             document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
             btn.classList.add('active');
             document.getElementById(btn.dataset.panel).classList.add('active');
+
+            // Lazy-init charts the first time the Fairness panel becomes visible.
+            // Chart.js needs the canvas to be visible to calculate correct dimensions.
+            if (btn.dataset.panel === 'panel-fairness') {
+                if (!chartsInitialized) {
+                    initCharts();
+                    chartsInitialized = true;
+                } else {
+                    if (latencyChart) latencyChart.resize();
+                    if (fillRateChart) fillRateChart.resize();
+                }
+                // Immediately populate with cached data (no wait for next 2s heartbeat)
+                if (lastFairnessData) updateCharts(lastFairnessData);
+            }
         });
     });
 
@@ -405,7 +422,7 @@
         const chartOptions = (yLabel) => ({
             responsive: true,
             maintainAspectRatio: false,
-            animation: { duration: 600 },
+            animation: { duration: 400 },
             plugins: {
                 legend: { display: false },
                 tooltip: {
@@ -419,14 +436,16 @@
             scales: {
                 x: {
                     grid: { color: '#1a1a1a' },
-                    ticks: { color: '#666', font: { family: 'JetBrains Mono' } }
+                    ticks: { color: '#666', font: { family: 'JetBrains Mono', size: 10 }, maxRotation: 45 }
                 },
                 y: {
                     grid: { color: '#1a1a1a' },
-                    ticks: { color: '#666', font: { family: 'JetBrains Mono' } },
-                    title: { display: !!yLabel, text: yLabel, color: '#555' }
+                    ticks: { color: '#666', font: { family: 'JetBrains Mono', size: 10 } },
+                    title: { display: !!yLabel, text: yLabel, color: '#555' },
+                    beginAtZero: true
                 }
-            }
+            },
+            datasets: { bar: { maxBarThickness: 40, minBarLength: 2 } }
         });
 
         const latCtx = document.getElementById('chart-latency').getContext('2d');
@@ -436,14 +455,8 @@
                 labels: [],
                 datasets: [{
                     data: [],
-                    backgroundColor: ctx => {
-                        const label = ctx.chart.data.labels[ctx.dataIndex] || '';
-                        return label === 'YOU' ? '#00a852' : '#2a2a2a';
-                    },
-                    borderColor: ctx => {
-                        const label = ctx.chart.data.labels[ctx.dataIndex] || '';
-                        return label === 'YOU' ? '#00a852' : '#444';
-                    },
+                    backgroundColor: '#2a6496',
+                    borderColor: '#3a85c8',
                     borderWidth: 1,
                     borderRadius: 2
                 }]
@@ -458,8 +471,8 @@
                 labels: [],
                 datasets: [{
                     data: [],
-                    backgroundColor: '#1a1a1a',
-                    borderColor: '#444',
+                    backgroundColor: '#2a6496',
+                    borderColor: '#3a85c8',
                     borderWidth: 1,
                     borderRadius: 2
                 }]
@@ -471,32 +484,39 @@
     function updateCharts(data) {
         if (!latencyChart || !fillRateChart || !data || !data.length) return;
 
-        // Build labels & data
+        // Sort: YOU first, then bots by fill_rate descending. Limit to 16 total.
+        const youEntry = data.filter(d => d.id === 99999);
+        const botsSorted = data.filter(d => d.id !== 99999)
+            .sort((a, b) => a.id - b.id) // Fixed sorting by ID for consistent bar positions
+            .slice(0, 15);
+        const displayed = [...youEntry, ...botsSorted];
+
         const labels = [];
         const latData = [];
         const fillData = [];
 
-        // Sort: manual first, then bots
-        const sorted = [...data].sort((a, b) => (a.id === 99999 ? -1 : 1));
-
-        sorted.forEach(d => {
-            const label = d.id === 99999 ? 'YOU' : `Bot-${d.id % 100}`;
-            labels.push(label);
+        displayed.forEach(d => {
+            labels.push(d.id === 99999 ? 'YOU' : `B${d.id}`);
             latData.push(parseFloat(d.avg_lat.toFixed(4)));
             fillData.push(parseFloat(d.fill_rate.toFixed(2)));
         });
 
+        const bgLat = labels.map(l => l === 'YOU' ? '#00a852' : '#2a6496');
+        const brdLat = labels.map(l => l === 'YOU' ? '#00dc6e' : '#3a85c8');
+        const bgFill = labels.map(l => l === 'YOU' ? '#005c2d' : '#1a4a6e');
+        const brdFill = labels.map(l => l === 'YOU' ? '#00a852' : '#3a85c8');
+
         latencyChart.data.labels = labels;
         latencyChart.data.datasets[0].data = latData;
-        latencyChart.data.datasets[0].backgroundColor = labels.map(l => l === 'YOU' ? '#00a852' : '#222');
-        latencyChart.data.datasets[0].borderColor = labels.map(l => l === 'YOU' ? '#00a852' : '#333');
-        latencyChart.update('none');
+        latencyChart.data.datasets[0].backgroundColor = bgLat;
+        latencyChart.data.datasets[0].borderColor = brdLat;
+        latencyChart.update();
 
         fillRateChart.data.labels = labels;
         fillRateChart.data.datasets[0].data = fillData;
-        fillRateChart.data.datasets[0].backgroundColor = labels.map(l => l === 'YOU' ? '#005c2d' : '#1e1e1e');
-        fillRateChart.data.datasets[0].borderColor = labels.map(l => l === 'YOU' ? '#00a852' : '#333');
-        fillRateChart.update('none');
+        fillRateChart.data.datasets[0].backgroundColor = bgFill;
+        fillRateChart.data.datasets[0].borderColor = brdFill;
+        fillRateChart.update();
     }
 
     // ═══════════════════════════════════════════════════════
@@ -555,6 +575,8 @@
                 handleAck(data);
             } else if (data.type === 'fairness_stats') {
                 handleFairness(data, role);
+            } else if (data.type === 'engine_stats') {
+                handleEngineStats(data);
             }
         };
     }
@@ -579,6 +601,13 @@
                 renderDepth(sym);
                 updateMarketTip();
             }
+        }
+    }
+
+    function handleEngineStats(data) {
+        const mpsEl = document.getElementById('admin-mps');
+        if (mpsEl && data.mps !== undefined) {
+            mpsEl.innerHTML = `${data.mps.toLocaleString()} <span>/ sec</span>`;
         }
     }
 
@@ -668,12 +697,55 @@
     function handleFairness(data, role) {
         if (!data.data || !data.data.length) return;
 
+        // Cache so the Fairness tab populates instantly on click
+        lastFairnessData = data.data;
+
         // Update global avg latency display (both roles)
         const avg = data.data.reduce((a, b) => a + b.avg_lat, 0) / data.data.length;
 
         if (role === 'admin') {
             document.getElementById('admin-avg-lat').innerHTML = `${avg.toFixed(4)}<span> ms</span>`;
             updateCharts(data.data);
+
+            // --- Populate the Fairness Summary Stats Bar ---
+            const manualEntry = data.data.find(d => d.id === 99999);
+            const botEntries = data.data.filter(d => d.id !== 99999);
+            const botAvgLat = botEntries.length
+                ? botEntries.reduce((a, b) => a + b.avg_lat, 0) / botEntries.length
+                : 0;
+
+            const tradersEl = document.getElementById('fair-stat-traders');
+            const yourLatEl = document.getElementById('fair-stat-your-lat');
+            const botLatEl = document.getElementById('fair-stat-bot-lat');
+            const verdictEl = document.getElementById('fair-stat-verdict');
+
+            if (tradersEl) tradersEl.textContent = data.data.length;
+            if (botLatEl) botLatEl.textContent = botAvgLat > 0 ? `${botAvgLat.toFixed(4)} ms` : '—';
+
+            if (manualEntry) {
+                if (yourLatEl) yourLatEl.textContent = `${manualEntry.avg_lat.toFixed(4)} ms`;
+
+                // Verdict: FAIR if manual latency within 2x of bot avg OR difference < 0.5ms (noise floor)
+                if (verdictEl) {
+                    const isFair = (manualEntry.avg_lat <= (botAvgLat * 2.5)) || (Math.abs(manualEntry.avg_lat - botAvgLat) < 0.5);
+                    if (isFair) {
+                        verdictEl.textContent = '✓ FAIR';
+                        verdictEl.style.color = 'var(--green)';
+                    } else {
+                        verdictEl.textContent = '⚠ SKEWED';
+                        verdictEl.style.color = 'var(--red)';
+                    }
+                }
+            } else {
+                if (yourLatEl) yourLatEl.textContent = 'No trades yet';
+                if (verdictEl) { verdictEl.textContent = 'WAITING…'; verdictEl.style.color = ''; }
+            }
+
+            // Hide "Waiting…" overlays once we have real data
+            const olLat = document.getElementById('overlay-latency');
+            const olFill = document.getElementById('overlay-fillrate');
+            if (olLat) olLat.classList.add('hidden');
+            if (olFill) olFill.classList.add('hidden');
         }
         if (role === 'trader') {
             document.getElementById('trader-sys-latency').textContent = `Sys Latency: ${avg.toFixed(4)} ms`;

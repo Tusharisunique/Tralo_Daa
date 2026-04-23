@@ -8,18 +8,19 @@
 
 struct FairnessTraderStats {
     uint32_t trader_id;
-    uint64_t total_orders = 0;
-    uint64_t total_matches = 0;
-    uint64_t total_latency_ns = 0;
+    uint64_t total_orders   = 0;
+    uint64_t total_fills    = 0;    // maker + taker fills (for fill rate)
+    uint64_t taker_matches  = 0;    // only taker fills (for latency calc)
+    uint64_t total_latency_ns = 0;  // only taker latency (book wait excluded)
     
     double get_avg_latency_ms() const {
-        if (total_matches == 0) return 0.0;
-        return (double)total_latency_ns / total_matches / 1000000.0;
+        if (taker_matches == 0) return 0.0;
+        return (double)total_latency_ns / taker_matches / 1000000.0;
     }
     
     double get_fill_rate() const {
         if (total_orders == 0) return 0.0;
-        return (double)total_matches / total_orders * 100.0;
+        return (double)total_fills / total_orders * 100.0;
     }
 };
 
@@ -44,20 +45,26 @@ public:
 
     uint64_t on_match(uint64_t maker_order_id, uint64_t taker_order_id, uint64_t match_ts) {
         std::lock_guard<std::mutex> lock(mtx);
-        
-        // Remove maker if exists (to free memory)
-        submission_times.erase(maker_order_id);
 
         uint64_t calculated_latency = 0;
 
-        // Process taker latency and remove from map
-        auto it = submission_times.find(taker_order_id);
-        if (it != submission_times.end()) {
-            uint32_t taker_trader_id = it->second.trader_id;
-            calculated_latency = (match_ts > it->second.timestamp) ? (match_ts - it->second.timestamp) : 0;
-            stats[taker_trader_id].total_matches++;
+        // MAKER: count as a fill for fill_rate, but exclude book wait from avg_lat
+        auto maker_it = submission_times.find(maker_order_id);
+        if (maker_it != submission_times.end()) {
+            uint32_t maker_trader_id = maker_it->second.trader_id;
+            stats[maker_trader_id].total_fills++;  // fill rate only
+            submission_times.erase(maker_it);
+        }
+
+        // TAKER: count fill AND record latency (aggressive order — latency is meaningful)
+        auto taker_it = submission_times.find(taker_order_id);
+        if (taker_it != submission_times.end()) {
+            uint32_t taker_trader_id = taker_it->second.trader_id;
+            calculated_latency = (match_ts > taker_it->second.timestamp) ? (match_ts - taker_it->second.timestamp) : 0;
+            stats[taker_trader_id].total_fills++;
+            stats[taker_trader_id].taker_matches++;
             stats[taker_trader_id].total_latency_ns += calculated_latency;
-            submission_times.erase(it);
+            submission_times.erase(taker_it);
         }
         return calculated_latency;
     }

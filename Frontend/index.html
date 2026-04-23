@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TRALO - Exchange Terminal</title>
+    <title>TRALO</title>
     <link rel="stylesheet" href="style.css?v=3">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link
@@ -214,7 +214,7 @@
             <div class="admin-metrics">
                 <div class="admin-metric-card">
                     <label>Engine Throughput</label>
-                    <div class="metric-value">~50,000 <span>/ sec</span></div>
+                    <div class="metric-value" id="admin-mps">— <span>/ sec</span></div>
                 </div>
                 <div class="admin-metric-card">
                     <label>Total Orders Seen</label>
@@ -256,23 +256,52 @@
 
         <!-- Fairness Analysis Panel -->
         <div id="panel-fairness" class="admin-panel">
+
+            <!-- Summary Stats Bar -->
+            <div class="fairness-stats-bar">
+                <div class="fairness-stat-item">
+                    <label>Traders Tracked</label>
+                    <div class="fairness-stat-val" id="fair-stat-traders">—</div>
+                </div>
+                <div class="fairness-stat-item">
+                    <label>Your Avg Latency</label>
+                    <div class="fairness-stat-val highlight" id="fair-stat-your-lat">—</div>
+                </div>
+                <div class="fairness-stat-item">
+                    <label>Avg Bot Latency</label>
+                    <div class="fairness-stat-val" id="fair-stat-bot-lat">—</div>
+                </div>
+                <div class="fairness-stat-item">
+                    <label>Fairness Status</label>
+                    <div class="fairness-stat-val highlight" id="fair-stat-verdict">WAITING…</div>
+                </div>
+            </div>
+
             <div class="fairness-grid">
                 <div class="chart-card">
-                    <div class="chart-title">Average Match Latency — Trader vs Bots</div>
-                    <div class="chart-desc">Lower and equal bars = fairer system. The engine makes no distinction
-                        between manual and bot orders.</div>
-                    <div class="chart-wrap"><canvas id="chart-latency"></canvas></div>
+                    <div class="chart-title">Average Match Latency - Trader vs Bots</div>
+                    <div class="chart-desc">Lower and equal bars = fairer system. The engine makes no
+                        distinction between manual and bot orders.</div>
+                    <div class="chart-wrap">
+                        <canvas id="chart-latency"></canvas>
+                        <div class="chart-wrap-overlay" id="overlay-latency">Waiting for trade data…</div>
+                    </div>
                 </div>
                 <div class="chart-card">
-                    <div class="chart-title">Fill Rate (%) — Order Completion Equality</div>
-                    <div class="chart-desc">Shows what % of submitted orders get matched. A fair engine shows similar
-                        fill rates regardless of trader type.</div>
-                    <div class="chart-wrap"><canvas id="chart-fillrate"></canvas></div>
+                    <div class="chart-title">Fill Rate (%) - Order Completion Equality</div>
+                    <div class="chart-desc">Shows what % of submitted orders get matched. A fair engine
+                        shows similar fill rates regardless of trader type.</div>
+                    <div class="chart-wrap">
+                        <canvas id="chart-fillrate"></canvas>
+                        <div class="chart-wrap-overlay" id="overlay-fillrate">Waiting for trade data…</div>
+                    </div>
                 </div>
             </div>
             <div class="fairness-note">
-                <strong>How fairness works:</strong> The TRALO engine uses a strict <em>Price-Time Priority</em> queue.
-                Bots (40 concurrent) and manual orders share <strong>the same queue</strong> with no special treatment.
+                <strong>How fairness works:</strong> The TRALO engine uses a strict <em>Price-Time
+                    Priority</em> queue.
+                Bots (40 concurrent) and manual orders share <strong>the same queue</strong> with no special
+                treatment.
                 Latencies directly reflect CPU scheduling, not exchange bias.
             </div>
         </div>

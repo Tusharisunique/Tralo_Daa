@@ -25,8 +25,8 @@ public:
 
 protected:
   void run() override {
-    // Retail: 100-500ms (Very active)
-    std::uniform_int_distribution<int> sleep_dist(100, 500);
+    // Retail: 1-5ms behavior
+    std::uniform_int_distribution<int> sleep_dist(1000, 5000);
     std::uniform_int_distribution<uint32_t> qty_dist(5, 50);
     std::uniform_int_distribution<int> side_dist(0, 1);
     std::uniform_int_distribution<int> sym_dist(0, symbols.size() - 1);
@@ -44,7 +44,7 @@ protected:
       o.quantity = qty_dist(rng);
       o.side = side_dist(rng) == 0 ? Side::BUY : Side::SELL;
       o.trader_id = trader_id;
-      o.timestamp = now_ns();
+      o.timestamp = 0; // Set inside OrderQueue::try_enqueue
       strncpy(o.symbol, sym.c_str(), sizeof(o.symbol));
 
       local_generated++;
@@ -64,8 +64,8 @@ public:
 
 protected:
   void run() override {
-    // HFT: 20-50ms (Aggressive)
-    std::uniform_int_distribution<int> sleep_dist(20, 50); 
+    // HFT: 200-500us (Aggressive but context-switch friendly)
+    std::uniform_int_distribution<int> sleep_dist(200, 500); 
     std::uniform_int_distribution<uint32_t> qty_dist(50, 100);
     std::uniform_int_distribution<int> side_dist(0, 1);
     std::uniform_int_distribution<int> sym_dist(0, symbols.size() - 1);
@@ -82,7 +82,7 @@ protected:
       o.quantity = qty_dist(rng);
       o.side = side_dist(rng) == 0 ? Side::BUY : Side::SELL;
       o.trader_id = trader_id;
-      o.timestamp = now_ns();
+      o.timestamp = 0; // Set inside OrderQueue::try_enqueue
       strncpy(o.symbol, sym.c_str(), sizeof(o.symbol));
 
       local_generated++;
@@ -117,14 +117,14 @@ protected:
       buy_o.quantity = 1000;
       buy_o.side = Side::BUY;
       buy_o.trader_id = trader_id;
-      buy_o.timestamp = now_ns();
+      buy_o.timestamp = 0; // Set inside OrderQueue::try_enqueue
       strncpy(buy_o.symbol, sym.c_str(), sizeof(buy_o.symbol));
 
       sell_o.price = config.base_price_paise + 50;
       sell_o.quantity = 1000;
       sell_o.side = Side::SELL;
       sell_o.trader_id = trader_id;
-      sell_o.timestamp = now_ns();
+      sell_o.timestamp = 0; // Set inside OrderQueue::try_enqueue
       strncpy(sell_o.symbol, sym.c_str(), sizeof(sell_o.symbol));
 
       local_generated += 2;
@@ -166,7 +166,7 @@ protected:
         o.quantity = 10;
         o.side = (i % 2 == 0) ? Side::BUY : Side::SELL;
         o.trader_id = trader_id;
-        o.timestamp = now_ns();
+        o.timestamp = 0; // Set inside OrderQueue::try_enqueue
         strncpy(o.symbol, sym.c_str(), sizeof(o.symbol));
 
         local_generated++;
